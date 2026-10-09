@@ -1,6 +1,8 @@
 /**
  * @file data_analyzer.c
  * @brief Analyze byte data, character frequencies, encoding indicators, and entropy.
+ *
+ * ASCII-only output version - displays correctly on all terminals.
  */
 
 #include <errno.h>
@@ -14,6 +16,11 @@
 #define MAX_INPUT_SIZE ((size_t)1048576)
 #define INITIAL_CAPACITY ((size_t)4096)
 #define HEX_DUMP_LIMIT ((size_t)256)
+
+/* ASCII-safe display strings (replaces Unicode box-drawing / emoji) */
+#define LINE_EQUAL "================================================================"
+#define LINE_DASH  "----------------------------------------------------------------"
+#define BAR_CHAR   '#'
 
 typedef struct {
     size_t total_length;
@@ -62,14 +69,14 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    printf("╔══════════════════════════════════════════════════════════════╗\n");
-    printf("║           ADVANCED DATA ANALYZER v1.1.0                      ║\n");
-    printf("║     Character Detection & Length Analysis System             ║\n");
-    printf("╚══════════════════════════════════════════════════════════════╝\n\n");
+    printf("%s\n", LINE_EQUAL);
+    printf("           ADVANCED DATA ANALYZER v1.1.0\n");
+    printf("     Character Detection & Length Analysis System\n");
+    printf("%s\n\n", LINE_EQUAL);
 
     if (argc == 1) {
-        printf("📝 Enter data to analyze (Ctrl+D to finish on Unix, Ctrl+Z on Windows):\n");
-        printf("────────────────────────────────────────────────────────────────\n");
+        printf("[*] Enter data to analyze (Ctrl+D to finish on Unix, Ctrl+Z on Windows):\n");
+        printf("%s\n", LINE_DASH);
     }
 
     size_t data_length = 0;
@@ -81,16 +88,17 @@ int main(int argc, char *argv[]) {
     }
 
     if (filename) {
-        printf("📁 Analyzing file: %s\n\n", filename);
+        printf("[*] Analyzing file: %s\n\n", filename);
     } else {
         printf("\n");
     }
     if (truncated) {
-        fprintf(stderr, "Warning: input exceeds the %zu-byte limit; analyzing the first %zu bytes.\n",
+        fprintf(stderr,
+                "Warning: input exceeds the %zu-byte limit; analyzing the first %zu bytes.\n",
                 MAX_INPUT_SIZE, MAX_INPUT_SIZE);
     }
 
-    printf("🔍 Performing comprehensive data analysis...\n\n");
+    printf("[*] Performing comprehensive data analysis...\n\n");
 
     CharFrequency frequency = {0};
     DataStatistics stats = analyze_data(data, data_length, &frequency);
@@ -105,7 +113,7 @@ int main(int argc, char *argv[]) {
     }
 
     free(data);
-    printf("\n✅ Analysis complete.\n");
+    printf("\n[+] Analysis complete.\n");
     return EXIT_SUCCESS;
 }
 
@@ -430,38 +438,40 @@ static void display_statistics(const DataStatistics *stats) {
         return;
     }
 
-    printf("📈 COMPREHENSIVE DATA STATISTICS\n");
-    printf("════════════════════════════════════════════════════════════════\n");
-    printf("📏 Total Length:           %zu bytes\n", stats->total_length);
-    printf("🔤 Encoding Detected:      %s\n", stats->encoding_type);
-    printf("📊 Shannon Entropy:        %.4f bits/byte\n", stats->entropy);
+    printf("[*] COMPREHENSIVE DATA STATISTICS\n");
+    printf("%s\n", LINE_EQUAL);
+    printf("Total Length:              %zu bytes\n", stats->total_length);
+    printf("Encoding Detected:         %s\n", stats->encoding_type);
+    printf("Shannon Entropy:           %.4f bits/byte\n", stats->entropy);
     printf("\n");
-    printf("📋 CHARACTER BREAKDOWN (byte counts)\n");
-    printf("────────────────────────────────────────────────────────────────\n");
-    printf("✅ Printable ASCII:        %8zu (%6.2f%%)\n",
+    printf("[*] CHARACTER BREAKDOWN (byte counts)\n");
+    printf("%s\n", LINE_DASH);
+    printf("Printable ASCII:           %8zu (%6.2f%%)\n",
            stats->printable_chars,
            percentage(stats->printable_chars, stats->total_length));
-    printf("   ├─ Alphabetic:          %8zu (%6.2f%%)\n",
-           stats->alpha_chars, percentage(stats->alpha_chars, stats->total_length));
-    printf("   ├─ Numeric:             %8zu (%6.2f%%)\n",
-           stats->digit_chars, percentage(stats->digit_chars, stats->total_length));
-    printf("   ├─ Punctuation:         %8zu (%6.2f%%)\n",
+    printf("  |- Alphabetic:           %8zu (%6.2f%%)\n",
+           stats->alpha_chars,
+           percentage(stats->alpha_chars, stats->total_length));
+    printf("  |- Numeric:              %8zu (%6.2f%%)\n",
+           stats->digit_chars,
+           percentage(stats->digit_chars, stats->total_length));
+    printf("  |- Punctuation:          %8zu (%6.2f%%)\n",
            stats->punctuation_chars,
            percentage(stats->punctuation_chars, stats->total_length));
-    printf("   └─ Whitespace:          %8zu (%6.2f%%)\n",
+    printf("  |- Whitespace:           %8zu (%6.2f%%)\n",
            stats->whitespace_chars,
            percentage(stats->whitespace_chars, stats->total_length));
     printf("\n");
-    printf("⚠️  Non-Printable ASCII:    %8zu (%6.2f%%)\n",
+    printf("Non-Printable ASCII:       %8zu (%6.2f%%)\n",
            stats->non_printable_chars,
            percentage(stats->non_printable_chars, stats->total_length));
-    printf("🔣 Extended bytes (80-FF): %8zu (%6.2f%%)\n",
+    printf("Extended bytes (80-FF):    %8zu (%6.2f%%)\n",
            stats->extended_ascii_chars,
            percentage(stats->extended_ascii_chars, stats->total_length));
-    printf("🌐 UTF-8 multibyte:        %8zu valid sequences\n",
+    printf("UTF-8 multibyte:           %8zu valid sequences\n",
            stats->utf8_multibyte_chars);
-    printf("\n💡 ENTROPY INTERPRETATION\n");
-    printf("────────────────────────────────────────────────────────────────\n");
+    printf("\n[*] ENTROPY INTERPRETATION\n");
+    printf("%s\n", LINE_DASH);
 
     if (stats->entropy < 1.0) {
         printf("   Low entropy - Highly repetitive or structured data\n");
@@ -480,8 +490,8 @@ static void display_character_frequency(const CharFrequency *frequency,
         return;
     }
 
-    printf("📊 CHARACTER FREQUENCY ANALYSIS\n");
-    printf("────────────────────────────────────────────────────────────────\n");
+    printf("[*] CHARACTER FREQUENCY ANALYSIS\n");
+    printf("%s\n", LINE_DASH);
 
     if (frequency->most_common_count != 0) {
         const unsigned int byte = frequency->most_common_char;
@@ -500,7 +510,7 @@ static void display_character_frequency(const CharFrequency *frequency,
 
     printf("\nDetailed frequency breakdown:\n");
     printf("%-8s %-8s %-10s %s\n", "Char", "Hex", "Count", "Bar");
-    printf("────────────────────────────────────────────────────────────────\n");
+    printf("%s\n", LINE_DASH);
 
     for (unsigned int byte = 0; byte < 256; ++byte) {
         const size_t count = frequency->frequency[byte];
@@ -513,7 +523,7 @@ static void display_character_frequency(const CharFrequency *frequency,
                     : count * 40 / frequency->most_common_count;
             printf("'%c'      0x%02X    %-10zu ", display_char, byte, count);
             for (size_t j = 0; j < bar_length; ++j) {
-                putchar('#');
+                putchar(BAR_CHAR);
             }
             putchar('\n');
         }
@@ -527,10 +537,10 @@ static void display_hex_dump(const uint8_t *data, size_t length,
     }
 
     const size_t display_length = length < max_bytes ? length : max_bytes;
-    printf("🔍 HEX DUMP (first %zu bytes)\n", display_length);
-    printf("────────────────────────────────────────────────────────────────\n");
+    printf("[*] HEX DUMP (first %zu bytes)\n", display_length);
+    printf("%s\n", LINE_DASH);
     printf("%-8s  %-47s  %s\n", "Offset", "Hex Values", "ASCII");
-    printf("────────────────────────────────────────────────────────────────\n");
+    printf("%s\n", LINE_DASH);
 
     for (size_t i = 0; i < display_length; i += 16) {
         printf("%08zX  ", i);
